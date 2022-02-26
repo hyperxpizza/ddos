@@ -99,8 +99,7 @@ type Url struct {
 	numberOfRequests       int
 	numberOfErrorResponses int
 	stop                   chan bool
-	mutex1                 sync.Mutex
-	mutex2                 sync.Mutex
+	mutex                  sync.Mutex
 }
 
 func NewUrl(addr string) *Url {
@@ -109,20 +108,19 @@ func NewUrl(addr string) *Url {
 		numberOfRequests:       0,
 		numberOfErrorResponses: 0,
 		stop:                   make(chan bool),
-		mutex1:                 sync.Mutex{},
-		mutex2:                 sync.Mutex{},
+		mutex:                  sync.Mutex{},
 	}
 }
 
 func (u *Url) incrementNumberOfErrors() {
-	u.mutex1.Lock()
-	defer u.mutex1.Unlock()
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
 	u.numberOfErrorResponses++
 }
 
 func (u *Url) incrementNumberOfRequests() {
-	u.mutex2.Lock()
-	defer u.mutex2.Unlock()
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
 	u.numberOfRequests++
 }
 
