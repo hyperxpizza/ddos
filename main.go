@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
+	"math/rand"
 	"net/http"
 	"os"
 	"runtime"
@@ -10,6 +12,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	GetReq = "GET"
 )
 
 type Pool struct {
@@ -36,7 +42,7 @@ func NewPool(loglevel string, maxWorkers int) (*Pool, error) {
 		logger:     logger,
 		urls:       make([]*Url, 0),
 		wg:         sync.WaitGroup{},
-		httpClient: http.Client{Timeout: time.Second * 120},
+		httpClient: http.Client{},
 	}, nil
 }
 
@@ -62,7 +68,9 @@ func (p *Pool) Run() {
 						p.wg.Done()
 						return
 					default:
-						res, err := p.httpClient.Get(uu.addr)
+						ctx, _ := context.WithTimeout(context.Background(), time.Second*time.Duration(rand.Intn(120)))
+						req, _ := http.NewRequestWithContext(ctx, GetReq, u.addr, nil)
+						res, err := p.httpClient.Do(req)
 						if err != nil || res.StatusCode > 299 {
 							uu.incrementNumberOfErrors()
 						}
@@ -70,6 +78,7 @@ func (p *Pool) Run() {
 							res.Body.Close()
 						}
 						uu.incrementNumberOfRequests()
+
 					}
 				}
 			}()
@@ -148,7 +157,7 @@ func loadUrls(filepath string) ([]string, error) {
 
 var urlsFileOpt = flag.String("urls", "./urls.txt", "path to json file with the urls")
 var loglevelOpt = flag.String("loglevel", "info", "loglevel")
-var maxWorkersOpt = flag.Int("maxWorkers", 10, "number of workers per url")
+var maxWorkersOpt = flag.Int("maxWorkers", 50, "number of workers per url")
 
 func main() {
 
