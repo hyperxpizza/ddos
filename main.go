@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"runtime"
@@ -37,7 +36,7 @@ func NewPool(loglevel string, maxWorkers int) (*Pool, error) {
 		logger:     logger,
 		urls:       make([]*Url, 0),
 		wg:         sync.WaitGroup{},
-		httpClient: http.Client{Timeout: time.Second * 5},
+		httpClient: http.Client{Timeout: time.Second * 120},
 	}, nil
 }
 
@@ -89,7 +88,6 @@ func (p *Pool) printStats() {
 		for _, u := range p.urls {
 			p.logger.Infof("url: %s number of requests: %d number of error responses: %d", u.addr, u.numberOfRequests, u.numberOfErrorResponses)
 		}
-		fmt.Println()
 		time.Sleep(time.Second * 10)
 	}
 }
@@ -124,6 +122,10 @@ func (u *Url) incrementNumberOfRequests() {
 	u.numberOfRequests++
 }
 
+func (u *Url) deactivate() {
+	u.stop <- true
+}
+
 func loadUrls(filepath string) ([]string, error) {
 	arr := make([]string, 0)
 	file, err := os.Open(filepath)
@@ -144,7 +146,7 @@ func loadUrls(filepath string) ([]string, error) {
 	return arr, nil
 }
 
-var urlsFileOpt = flag.String("urls", "/home/hyperxpizza/dev/golang/ddos/urls.txt", "path to json file with the urls")
+var urlsFileOpt = flag.String("urls", "./urls.txt", "path to json file with the urls")
 var loglevelOpt = flag.String("loglevel", "info", "loglevel")
 var maxWorkersOpt = flag.Int("maxWorkers", 10, "number of workers per url")
 
